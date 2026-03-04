@@ -1,5 +1,4 @@
-//GAMEBOARD
-
+// ==== GAMEBOARD ====
 const Gameboard = (function () {
   //hard code board
   let board = [
@@ -43,7 +42,7 @@ const Gameboard = (function () {
   };
 })();
 
-//PLAYER FACTORY
+// ==== PLAYER FACTORY ====
 
 const Player = (name, marker) => {
   const getName = () => name;
@@ -54,7 +53,7 @@ const Player = (name, marker) => {
   };
 };
 
-//GAME CONTROLLER
+//==== GAME CONTROLLER ====
 
 const GameController = (function () {
   let players = [];
@@ -63,14 +62,14 @@ const GameController = (function () {
 
   //startGame
   const startGame = (name1, name2) => {
-    players = [Player(name1, "X"), Player(name2, "O")];
+    players = [Player(name1, "X"), Player(name2,"O")];
     currentPlayer = players[0];
     gameOver = false;
     Gameboard.reset();
   };
   //playRound
   const playRound = (row, col) => {
-    //if gameOver return false
+    //if gameOver becomes true return false
     if (gameOver) return false;
     //Try place mark, if fail return false
     const placed = Gameboard.placeMark(row, col, currentPlayer.getMarker());
@@ -81,19 +80,24 @@ const GameController = (function () {
       gameOver = true;
       return winner;
     }
+    if(Gameboard.isBoardFull()){
+      gameOver = true;
+      return "draw";
+    }
     //Switch player
-    currentPlayer =
-      currentPlayer === players[0] ? players[1] : players[0];
+    currentPlayer = currentPlayer === players[0] ? players[1] : players[0];
     return true;
   };
+  // get current Player
+  const getCurrentPlayer = () => currentPlayer;
   //checkWin
-   const checkLine = (a, b, c) => {
-      if (a === b && b === c && a !== null) return a;
-      return null;
-    };
+  const checkLine = (a, b, c) => {
+    if (a === b && b === c && a !== null) return a;
+    return null;
+  };
   const checkWin = () => {
     const board = Gameboard.getBoard();
-    //check rows
+    //==== check rows ====
     //row1
     let result = checkLine(board[0][0], board[0][1], board[0][2]);
     if (result) return result;
@@ -126,5 +130,71 @@ const GameController = (function () {
     startGame,
     playRound,
     checkWin,
+    getCurrentPlayer,
+  };
+})();
+
+// ==== DISPLAY CONTROLLER ====
+const DisplayController = (function () {
+  const boardContainer = document.getElementById("gameBoard");
+  const messageDiv = document.getElementById("display");
+  const startBtn = document.getElementById("startBtn");
+  const player1Input = document.getElementById("player1");
+  const player2Input = document.getElementById("player2");
+  //initialization 
+  const init = () => {
+    startBtn.addEventListener("click",handleStart);
+  };
+
+//handle start
+const handleStart = () =>{
+  const name1 = player1Input.value || "Player1";
+  const name2 = player2Input.value || "Player2"
+  GameController.startGame(name1,name2);
+  render();
+  messageDiv.textContent = 
+  `${GameController.getCurrentPlayer().getName()}'s turn`;
+};
+// Click handeller for cells
+const handleCellClick = (e) => {
+const row = Number(e.target.dataset.row);
+const col = Number(e.target.dataset.col);
+const result = GameController.playRound(row,col);
+if(result === false){
+  return;
+}
+render();
+if(result === true){
+  messageDiv.textContent = 
+  `${GameController.getCurrentPlayer().getName()}'s turn`;
+}else if(result === "draw"){
+  messageDiv.textContent = "It's a draw!"
+}
+else{
+  messageDiv.textContent = 
+  `${GameController.getCurrentPlayer().getName()} wins!`;
+}
+};
+  const render = () => {
+    boardContainer.innerHTML = "";
+    const board = Gameboard.getBoard();
+    for (let i = 0; i < board.length; i++) {
+      for (let j = 0; j < board[i].length; j++) {
+        const cell = document.createElement("div");
+        cell.dataset.row = i;
+        cell.dataset.col = j;
+        if (board[i][j]) {
+          cell.textContent = board[i][j];
+        } else {
+          cell.textContent = "";
+        }
+        cell.addEventListener("click", handleCellClick);
+        boardContainer.appendChild(cell);
+      }
+    }
+  };
+  init();
+  return {
+    render,
   };
 })();
